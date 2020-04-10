@@ -14,7 +14,8 @@ class GatsbyInstantPreviewAdminForm extends GatsbyAdminForm {
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
-    parent::buildForm($form, $form_state);
+    $form = parent::buildForm($form, $form_state);
+    $config = $this->config('gatsby.settings');
 
     $form['secret_key'] = [
       '#type' => 'textfield',
