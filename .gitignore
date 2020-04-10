@@ -2,6 +2,8 @@
 ### GitHub repository .gitignore section
 ###
 
+.vscode
+
 # Ignore files only needed on CI
 .bashrc
 

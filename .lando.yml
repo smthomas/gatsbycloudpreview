@@ -1,0 +1,8 @@
+name: gatsbycloudpreview
+recipe: pantheon
+config:
+  framework: drupal8
+  site: gatsbycloudpreview
+  id: 2a1d86b4-259c-4665-8b33-d7b9a67a55b6
+  webroot: web
+  xdebug: true
