@@ -1,0 +1,9 @@
+name: 'Gatsby JSON:API Instant Preview'
+type: module
+description: 'Enables a faster preview exerience when using JSON:API and gatsby-source-drupal'
+core: 8.x
+package: 'Gatsby'
+dependencies:
+  - gatsby:gatsby
+  - drupal:jsonapi
+  - jsonapi_extras:jsonapi_extras
