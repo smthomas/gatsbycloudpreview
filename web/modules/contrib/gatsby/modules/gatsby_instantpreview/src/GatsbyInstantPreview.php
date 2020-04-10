@@ -58,7 +58,7 @@ class GatsbyInstantPreview extends GatsbyPreview {
 
     $incrementalbuild_url = $this->innerService->config->get('incrementalbuild_url');
     if ($incrementalbuild_url) {
-      $this->innerService->triggerRefresh($incrementalbuild_url);
+      $this->innerService->triggerRefresh($incrementalbuild_url, FALSE, "");
     }
   }
 

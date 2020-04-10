@@ -69,7 +69,7 @@ class GatsbyPreview {
 
     $incrementalbuild_url = $this->config->get('incrementalbuild_url');
     if ($incrementalbuild_url) {
-      $this->triggerRefresh($incrementalbuild_url);
+      $this->triggerRefresh($incrementalbuild_url, FALSE, "");
     }
   }
 
