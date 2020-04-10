@@ -93,7 +93,7 @@ class GatsbyAdminForm extends ConfigFormBase {
 
     $this->config('gatsby.settings')
       ->set('server_url', $form_state->getValue('server_url'))
-      ->set('incrementalbuild_url', $form_state->getValue('server_url'))
+      ->set('incrementalbuild_url', $form_state->getValue('incrementalbuild_url'))
       ->set('preview_entity_types', $form_state->getValue('preview_entity_types'))
       ->save();
   }
