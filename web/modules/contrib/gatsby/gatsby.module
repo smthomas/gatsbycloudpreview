@@ -125,7 +125,8 @@ function gatsby_entity_update(EntityInterface $entity) {
     return;
   }
 
-  $gatsbyPreview->gatsbyUpdate($entity);
+  $gatsbyPreview->gatsbyPrepareData($entity);
+  drupal_register_shutdown_function('_gatsby_update');
 }
 
 /**
@@ -139,7 +140,8 @@ function gatsby_entity_insert(EntityInterface $entity) {
     return;
   }
 
-  $gatsbyPreview->gatsbyUpdate($entity);
+  $gatsbyPreview->gatsbyPrepareData($entity);
+  drupal_register_shutdown_function('_gatsby_update');
 }
 
 /**
@@ -152,7 +154,8 @@ function gatsby_entity_delete(EntityInterface $entity) {
     return;
   }
 
-  $gatsbyPreview->gatsbyDelete($entity);
+  $gatsbyPreview->gatsbyPrepareDelete($entity);
+  drupal_register_shutdown_function('_gatsby_update');
 }
 
 /**
@@ -196,4 +199,12 @@ function gatsby_node_view(array &$build, $entity, $display, $view_mode) {
       ];
     }
   }
+}
+
+/**
+ * Triggers the update to the Gatsby Preview and Incremental Builds servers.
+ */
+function _gatsby_update() {
+  $gatsbyPreview = \Drupal::service('gatsby.gatsby_preview');
+  $gatsbyPreview->gatsbyUpdate();
 }

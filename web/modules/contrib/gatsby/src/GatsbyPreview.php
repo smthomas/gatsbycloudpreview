@@ -44,6 +44,13 @@ class GatsbyPreview {
   protected $logger;
 
   /**
+   * Tracks if an incremental build has been triggered.
+   *
+   * @var bool
+   */
+  public static $updateData = [];
+
+  /**
    * Constructs a new GatsbyPreview object.
    */
   public function __construct(ClientInterface $http_client,
@@ -57,20 +64,44 @@ class GatsbyPreview {
   }
 
   /**
-   * Triggers the refreshing of Gatsby preview and incremental builds.
+   * Prepares Gatsby Data to send to the preview and build servers.
+   *
+   * By preparing the data in a separate step we prevent multiple requests from
+   * being sent to the preview or incremental builds servers if mulutiple
+   * Drupal entities are update/created/deleted in a single request.
    */
-  public function gatsbyUpdate(ContentEntityInterface $entity = NULL) {
+  public function gatsbyPrepareData(ContentEntityInterface $entity = NULL) {
     $preview_url = $this->config->get('server_url');
 
     // Only trigger the preview refresh if gatsby_instantpreview is not enabled.
     if ($preview_url) {
-      $this->triggerRefresh($preview_url);
+      //$this->triggerRefresh($preview_url);
+      self::$updateData['preview'] = [
+        'url' => $preview_url,
+        'json' => FALSE,
+        'path' => "/__refresh",
+      ];
     }
 
     $incrementalbuild_url = $this->config->get('incrementalbuild_url');
     if ($incrementalbuild_url) {
-      $this->triggerRefresh($incrementalbuild_url, FALSE, "");
+      //$this->triggerRefresh($incrementalbuild_url, FALSE, "");
+      self::$updateData['incrementalbuild'] = [
+        'url' => $incrementalbuild_url,
+        'json' => FALSE,
+        'path' => "",
+      ];
     }
+  }
+
+  /**
+   * Prepares Gatsby Deletes to send to the preview and build servers.
+   *
+   * This is a separate method to allow overriding services to override the
+   * delete method to add additional data.
+   */
+  public function gatsbyPrepareDelete(ContentEntityInterface $entity = NULL) {
+    $this->gatsbyPrepareData($entity);
   }
 
   /**
@@ -86,6 +117,15 @@ class GatsbyPreview {
     $entityType = $entity->getEntityTypeId();
     $selectedEntityTypes = $this->config->get('preview_entity_types') ?: [];
     return in_array($entityType, array_values($selectedEntityTypes), TRUE);
+  }
+
+  /**
+   * Triggers the refreshing of Gatsby preview and incremental builds.
+   */
+  public function gatsbyUpdate() {
+    foreach (self::$updateData as $data) {
+      $this->triggerRefresh($data['url'], $data['json'], $data['path']);
+    }
   }
 
   /**
