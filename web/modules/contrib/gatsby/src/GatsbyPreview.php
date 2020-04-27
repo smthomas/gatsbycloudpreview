@@ -44,9 +44,9 @@ class GatsbyPreview {
   protected $logger;
 
   /**
-   * Tracks if an incremental build has been triggered.
+   * Tracks data changes that should be sent to Gatsby.
    *
-   * @var bool
+   * @var array
    */
   public static $updateData = [];
 
@@ -73,9 +73,7 @@ class GatsbyPreview {
   public function gatsbyPrepareData(ContentEntityInterface $entity = NULL) {
     $preview_url = $this->config->get('server_url');
 
-    // Only trigger the preview refresh if gatsby_instantpreview is not enabled.
     if ($preview_url) {
-      //$this->triggerRefresh($preview_url);
       self::$updateData['preview'] = [
         'url' => $preview_url,
         'json' => FALSE,
@@ -85,7 +83,6 @@ class GatsbyPreview {
 
     $incrementalbuild_url = $this->config->get('incrementalbuild_url');
     if ($incrementalbuild_url) {
-      //$this->triggerRefresh($incrementalbuild_url, FALSE, "");
       self::$updateData['incrementalbuild'] = [
         'url' => $incrementalbuild_url,
         'json' => FALSE,

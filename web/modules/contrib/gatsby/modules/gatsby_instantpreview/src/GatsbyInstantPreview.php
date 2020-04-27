@@ -37,9 +37,13 @@ class GatsbyInstantPreview extends GatsbyPreview {
   }
 
   /**
-   * Triggers the refreshing of Gatsby preview and incremental builds.
+   * Prepares Gatsby Data to send to the preview and build servers.
+   *
+   * By preparing the data in a separate step we prevent multiple requests from
+   * being sent to the preview or incremental builds servers if mulutiple
+   * Drupal entities are update/created/deleted in a single request.
    */
-  public function gatsbyUpdate(ContentEntityInterface $entity = NULL) {
+  public function gatsbyPrepareData(ContentEntityInterface $entity = NULL) {
     $encoded_json = $this->entityToJsonApi->serialize($entity);
 
     // If there is a secret key, we decode the json, add the key, then encode.
@@ -53,12 +57,20 @@ class GatsbyInstantPreview extends GatsbyPreview {
 
     // Only trigger the preview refresh if gatsby_instantpreview is not enabled.
     if ($preview_url) {
-      $this->innerService->triggerRefresh($preview_url, $encoded_json, "/___updatePreview");
+      self::$updateData['preview'] = [
+        'url' => $preview_url,
+        'json' => $encoded_json,
+        'path' => "/__updatePreview",
+      ];
     }
 
     $incrementalbuild_url = $this->innerService->config->get('incrementalbuild_url');
     if ($incrementalbuild_url) {
-      $this->innerService->triggerRefresh($incrementalbuild_url, FALSE, "");
+      self::$updateData['incrementalbuild'] = [
+        'url' => $incrementalbuild_url,
+        'json' => FALSE,
+        'path' => "",
+      ];
     }
   }
 
@@ -89,60 +101,5 @@ class GatsbyInstantPreview extends GatsbyPreview {
       $this->innerService->triggerRefresh($incrementalbuild_url, $encoded_json, "/___updatePreview");
     }
   }
-
-  /**
-   * Send updates to Gatsby Preview server.
-   *
-   * @param \Drupal\Core\Entity\ContentEntityInterface $entity
-   *   The entity to update.
-   */
-  // public function updatePreviewEntity(ContentEntityInterface $entity) {
-  //   $encoded_json = $this->entityToJsonApi->serialize($entity);
-
-  //   // If there is a secret key, we decode the json, add the key, then encode.
-  //   if ($this->config->get('secret_key')) {
-  //     $json_object = json_decode($encoded_json);
-  //     $json_object->secret = $this->config->get('secret_key');
-  //     $encoded_json = json_encode($json_object);
-  //   }
-
-  //   $server_url = $this->config->get('server_url');
-  //   try {
-  //     $this->httpClient->post(
-  //       $server_url . "/___updatePreview",
-  //       [
-  //         'json' => $encoded_json,
-  //         'timeout' => 1,
-  //       ]
-  //     );
-  //   }
-  //   catch (ServerException | ConnectException $e) {
-  //     // Do nothing as no response is returned from the preview server.
-  //   }
-  //   catch (\Exception $e) {
-  //     $this->logger->error($e->getMessage());
-  //   }
-  // }
-
-  /**
-   * Send delete request to Gatsby Preview server.
-   *
-   * @param \Drupal\Core\Entity\ContentEntityInterface $entity
-   *   The entity to delete.
-   */
-  // -
-
-  /**
-   * Verify the entity is selected to sync to the Gatsby site.
-   *
-   * @param \Drupal\Core\Entity\ContentEntityInterface $entity
-   *   The entity.
-   *
-   * @return bool
-   *   If the entity type should be sent to Gatsby Preview.
-   */
-  // public function isPreviewEntity(ContentEntityInterface $entity) {
-  //   return $this->innerService->isPreviewEntity($entity);
-  // }
 
 }
