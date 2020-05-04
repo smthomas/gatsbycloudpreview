@@ -11,6 +11,10 @@
   padding-left: 39px;
 }
 
+.gatsby-link {
+  color: rgb(102, 51, 153);
+}
+
 .button.form-submit.gatsby-preview:hover,
 .button.form-submit.gatsby-preview:focus {
   background: #362066;
@@ -18,4 +22,11 @@
   background-repeat: no-repeat;
   background-size: 65px;
   background-position: 12px 5px;
+}
+
+.gatsby-iframe-sidebar {
+  position: fixed;
+  text-align: right;
+  right: 0%;
+  width: 50%;
 }

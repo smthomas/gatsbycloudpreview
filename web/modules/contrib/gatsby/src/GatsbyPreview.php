@@ -7,6 +7,7 @@ use GuzzleHttp\Exception\ConnectException;
 use GuzzleHttp\Exception\ServerException;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Entity\ContentEntityInterface;
+use Drupal\node\NodeInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Logger\LoggerChannelFactoryInterface;
 
@@ -82,13 +83,19 @@ class GatsbyPreview {
     }
 
     $incrementalbuild_url = $this->config->get('incrementalbuild_url');
-    if ($incrementalbuild_url) {
+    if (!$incrementalbuild_url) {
+      return;
+    }
+
+    $build_published = $this->config->get('build_published');
+    if (!$build_published || ($entity instanceof NodeInterface && $entity->isPublished())) {
       self::$updateData['incrementalbuild'] = [
         'url' => $incrementalbuild_url,
         'json' => FALSE,
         'path' => "",
       ];
     }
+
   }
 
   /**
@@ -98,7 +105,29 @@ class GatsbyPreview {
    * delete method to add additional data.
    */
   public function gatsbyPrepareDelete(ContentEntityInterface $entity = NULL) {
-    $this->gatsbyPrepareData($entity);
+    $json = [
+      'id' => $entity->uuid(),
+      'action' => 'delete',
+    ];
+
+    $preview_path = "/__refresh";
+    $preview_url = $this->innerService->config->get('server_url');
+    if ($preview_url) {
+      self::$updateData['preview'] = [
+        'url' => $preview_url,
+        'json' => $json,
+        'path' => $preview_path,
+      ];
+    }
+
+    $incrementalbuild_url = $this->innerService->config->get('incrementalbuild_url');
+    if ($incrementalbuild_url) {
+      self::$updateData['incrementalbuild'] = [
+        'url' => $incrementalbuild_url,
+        'json' => FALSE,
+        'path' => "",
+      ];
+    }
   }
 
   /**
@@ -123,6 +152,9 @@ class GatsbyPreview {
     foreach (self::$updateData as $data) {
       $this->triggerRefresh($data['url'], $data['json'], $data['path']);
     }
+
+    // Reset update data to ensure it's only processed once.
+    self::$updateData = [];
   }
 
   /**
@@ -130,8 +162,10 @@ class GatsbyPreview {
    *
    * @param string $server_url
    *   The Gatsby URL to refresh.
-   * @parm string $json
-   *   Optional JSON to post to the server.
+   * @param object $json
+   *   Optional JSON object to post to the server.
+   * @param string $path
+   *   The path used to trigger the refresh endpoint.
    */
   protected function triggerRefresh($server_url, $json = FALSE, $path = "/__refresh") {
     $data = ['timeout' => 1];

@@ -33,24 +33,47 @@ function gatsby_form_alter(&$form, FormStateInterface $form_state, $form_id) {
 
   // Get Preview & iFrame settings.
   $preview_settings = \Drupal::config('gatsby.settings')->get('preview');
+  $target_settings = \Drupal::config('gatsby.settings')->get('target');
   $iframe_settings = \Drupal::config('gatsby.settings')->get('iframe');
 
   // Add Gatsby Preview button to content type settings form.
   if ($form_id == 'node_type_edit_form') {
     $node_type = \Drupal::routeMatch()->getParameter('node_type')->id();
 
-    $form['submission']['gatsby_preview'] = [
-      '#type' => 'checkbox',
-      '#title' => t('Enable Gatsby Preview'),
-      '#default_value' => !empty($preview_settings[$node_type]),
-      '#description' => 'This will add a Gatsby Preview button to node pages.',
+    $form['gatsby'] = [
+      '#title' => t('Gatsby Preview'),
+      '#type' => 'details',
+      '#group' => 'additional_settings',
     ];
 
-    $form['submission']['gatsby_iframe'] = [
+    $form['gatsby']['gatsby_preview'] = [
+      '#type' => 'checkbox',
+      '#title' => t('Enable Gatsby Preview Button'),
+      '#default_value' => !empty($preview_settings[$node_type]),
+      '#description' => t('This will add a Gatsby Preview button to node pages.'),
+    ];
+
+    $form['gatsby']['gatsby_preview_target'] = [
+      '#type' => 'select',
+      '#title' => t('Gatsby Preview Button Target'),
+      '#options' => [
+        'window' => t('New Window'),
+        'sidebar' => t('Sidebar on Node Edit page'),
+      ],
+      '#description' => t('This controls the behavior of the Gatsby preview button.'),
+      '#default_value' => !empty($target_settings[$node_type]) ? $target_settings[$node_type] : [],
+      '#states' => [
+        'visible' => [
+          ':input[name="gatsby_preview"]' => ['checked' => TRUE],
+        ],
+      ],
+    ];
+
+    $form['gatsby']['gatsby_iframe'] = [
       '#type' => 'checkbox',
       '#title' => t('Enable Gatsby iFrame Preview'),
       '#default_value' => !empty($iframe_settings[$node_type]),
-      '#description' => 'This will add an iFrame display to node pages.',
+      '#description' => t('This will add an iFrame display to node pages.'),
     ];
     $form['actions']['submit']['#submit'][] = 'gatsby_preview_form_submit';
   }
@@ -81,13 +104,14 @@ function gatsby_form_alter(&$form, FormStateInterface $form_state, $form_id) {
         '#weight' => 5,
       ];
       $form['actions']['gatsby_preview']['#value'] = 'Open Gatsby Preview';
-      $form['actions']['gatsby_preview']['#attributes']['class'] = ['gatsby-preview'];
+      $form['actions']['gatsby_preview']['#attributes']['class'] = ['gatsby-preview',];
 
       // Implement "Open Preview" action.
       $form['actions']['gatsby_preview']['#attached'] = [
         'drupalSettings' => [
           'gatsby_preview_url' => $server_url,
           'gatsby_show_home' => $gatsby_show_home,
+          'gatsby_preview_target' => !empty($target_settings[$node_type]) ? $target_settings[$node_type] : 'window',
         ],
         'library' => [
           'gatsby/open_preview',
@@ -106,6 +130,9 @@ function gatsby_preview_form_submit(array $form, FormStateInterface $form_state)
   $preview_settings = $config->get('preview');
   $preview_settings[$id] = $form_state->getValue('gatsby_preview');
 
+  $target_settings = $config->get('target');
+  $target_settings[$id] = $form_state->getValue('gatsby_preview_target');
+
   $iframe_settings = $config->get('iframe');
   $iframe_settings[$id] = $form_state->getValue('gatsby_iframe');
 
@@ -113,6 +140,7 @@ function gatsby_preview_form_submit(array $form, FormStateInterface $form_state)
   $config
     ->set('preview', $preview_settings)
     ->set('iframe', $iframe_settings)
+    ->set('target', $target_settings)
     ->save();
 }
 
@@ -140,7 +168,7 @@ function gatsby_entity_insert(EntityInterface $entity) {
     return;
   }
 
-  $gatsbyPreview->gatsbyPrepareData($entity);
+  $gatsbyPreview->gatsbyPrepareData($entity, 'create');
   drupal_register_shutdown_function('_gatsby_update');
 }
 

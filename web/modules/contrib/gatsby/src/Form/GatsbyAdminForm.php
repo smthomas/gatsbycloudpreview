@@ -4,6 +4,7 @@ namespace Drupal\gatsby\Form;
 
 use Drupal\Core\Entity\ContentEntityTypeInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
@@ -21,13 +22,21 @@ class GatsbyAdminForm extends ConfigFormBase {
   protected $entityTypeManager;
 
   /**
+   * Drupal\Core\Extension\ModuleHandlerInterface definition.
+   *
+   * @var \Drupal\Core\Extension\ModuleHandlerInterface
+   */
+  protected $moduleHandler;
+
+  /**
    * Class constructor.
    *
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entityTypeManager
    *   The entity type manager.
    */
-  public function __construct(EntityTypeManagerInterface $entityTypeManager) {
+  public function __construct(EntityTypeManagerInterface $entityTypeManager, ModuleHandlerInterface $moduleHandler) {
     $this->entityTypeManager = $entityTypeManager;
+    $this->moduleHandler = $moduleHandler;
   }
 
   /**
@@ -35,7 +44,8 @@ class GatsbyAdminForm extends ConfigFormBase {
    */
   public static function create(ContainerInterface $container) {
     return new static(
-      $container->get('entity_type.manager')
+      $container->get('entity_type.manager'),
+      $container->get('module_handler')
     );
   }
 
@@ -67,12 +77,31 @@ class GatsbyAdminForm extends ConfigFormBase {
       '#default_value' => $config->get('server_url'),
       '#weight' => 0,
     ];
+
+    $build_title = $this->t("Build Server Callback Hook");
+    $build_description = $this->t('The Callback URL to trigger the Gatsby Build. Note: Incremental builds are currently only supported with JSON:API and gatsby-source-drupal');
+    if ($this->moduleHandler->moduleExists('jsonapi_extras')) {
+      $build_title = $this->t("Incremental Build Server Callback Hook");
+      $build_description = $this->t('The Callback URL to the Gatsby incremental builds server');
+    }
     $form['incrementalbuild_url'] = [
       '#type' => 'textfield',
-      '#title' => $this->t('Incremental Build Server URL'),
-      '#description' => $this->t('The URL to the Gatsby incremental builds server (with port number if needed)'),
+      '#title' => $build_title,
+      '#description' => $build_description,
       '#default_value' => $config->get('incrementalbuild_url'),
       '#weight' => 1,
+    ];
+    $form['build_published'] = [
+      '#type' => 'checkbox',
+      '#title' => $this->t('Only trigger builds for published content'),
+      '#description' => $this->t('Experimental: Depending on your content workflow, you may only
+        want builds to be triggered for published content. By checking this box
+        only published content will trigger a build. This means additional entities
+        such as Media or Files will not trigger a rebuild until the content it\'s
+        attached to is published. The downside is that this will
+        only allow content entities to trigger a rebuild.'),
+      '#default_value' => $config->get('build_published') !== NULL ? $config->get('build_published') : TRUE,
+      '#weight' => 2,
     ];
     $form['preview_entity_types'] = [
       '#type' => 'checkboxes',
@@ -94,6 +123,7 @@ class GatsbyAdminForm extends ConfigFormBase {
     $this->config('gatsby.settings')
       ->set('server_url', $form_state->getValue('server_url'))
       ->set('incrementalbuild_url', $form_state->getValue('incrementalbuild_url'))
+      ->set('build_published', $form_state->getValue('build_published'))
       ->set('preview_entity_types', $form_state->getValue('preview_entity_types'))
       ->save();
   }
