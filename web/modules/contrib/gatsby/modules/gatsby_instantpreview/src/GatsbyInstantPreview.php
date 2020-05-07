@@ -7,6 +7,7 @@ use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Entity\ContentEntityInterface;
 use Drupal\node\NodeInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
+use Drupal\Core\Entity\EntityRepository;
 use Drupal\Core\Logger\LoggerChannelFactoryInterface;
 use Drupal\gatsby\GatsbyPreview;
 use Drupal\jsonapi_extras\EntityToJsonApi;
@@ -24,6 +25,13 @@ class GatsbyInstantPreview extends GatsbyPreview {
   private $entityToJsonApi;
 
   /**
+   * Drupal\Core\Entity\EntityRepository definition.
+   *
+   * @var \Drupal\Core\Entity\EntityRepository
+   */
+  private $entityRepository;
+
+  /**
    * Constructs a new GatsbyInstantPreview object.
    */
   public function __construct(GatsbyPreview $inner_service,
@@ -31,9 +39,11 @@ class GatsbyInstantPreview extends GatsbyPreview {
       ConfigFactoryInterface $config,
       EntityTypeManagerInterface $entity_type_manager,
       LoggerChannelFactoryInterface $logger,
-      EntityToJsonApi $entity_to_json_api) {
+      EntityToJsonApi $entity_to_json_api,
+      EntityRepository $entity_repository) {
     $this->innerService = $inner_service;
     $this->entityToJsonApi = $entity_to_json_api;
+    $this->entityRepository = $entity_repository;
     parent::__construct($http_client, $config, $entity_type_manager, $logger);
   }
 
@@ -84,18 +94,9 @@ class GatsbyInstantPreview extends GatsbyPreview {
         return;
       }
 
+      // Generate JSON for all related entities to send to Gatsby.
       $entity_data = [];
-      foreach ($json['data']['relationships'] as $data) {
-        // Get the entity type.
-        $entityType = !empty($data['data']['type']) ? explode('--', $data['data']['type']) : "";
-        $selectedEntityTypes = $this->config->get('preview_entity_types') ?: [];
-        if (!empty($entityType) && in_array($entityType[0], array_values($selectedEntityTypes), TRUE)) {
-          $related_entity = \Drupal::service('entity.repository')->loadEntityByUuid($entityType[0], $data['data']['id']);
-          //$related_entity = $this->entityTypeManager->getStorage($entityType[0])->load($data['data']['id']);
-          $related_json = json_decode($this->entityToJsonApi->serialize($related_entity), TRUE);
-          $entity_data[] = $related_json['data'];
-        }
-      }
+      $this->buildRelationshipJson($json['data']['relationships'], $entity_data);
 
       if (!empty($entity_data)) {
         $original_data = $json['data'];
@@ -168,6 +169,28 @@ class GatsbyInstantPreview extends GatsbyPreview {
     }
 
     return $json;
+  }
+
+  /**
+   * Builds an array of entity JSON data based on entity relationships.
+   */
+  private function buildRelationshipJson($relationships, &$entity_data) {
+    foreach ($relationships as $data) {
+      // Only add JSON if the entity type is one that should be sent to Gatsby.
+      $entityType = !empty($data['data']['type']) ? explode('--', $data['data']['type']) : "";
+      $selectedEntityTypes = $this->config->get('preview_entity_types') ?: [];
+      if (!empty($entityType) && in_array($entityType[0], array_values($selectedEntityTypes), TRUE)) {
+        $related_entity = $this->entityRepository->loadEntityByUuid($entityType[0], $data['data']['id']);
+        $related_json = json_decode($this->entityToJsonApi->serialize($related_entity), TRUE);
+
+        // We need to traverse all related entities to get all relevant JSON.
+        if (!empty($related_json['data']['relationships'])) {
+          $this->buildRelationshipJson($related_json['data']['relationships'], $entity_data);
+        }
+
+        $entity_data[] = $related_json['data'];
+      }
+    }
   }
 
 }
