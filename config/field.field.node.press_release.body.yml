@@ -1,0 +1,23 @@
+uuid: 036f9f45-bdd8-4952-8afb-b5bed95dc25a
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.node.body
+    - node.type.press_release
+  module:
+    - text
+id: node.press_release.body
+field_name: body
+entity_type: node
+bundle: press_release
+label: Body
+description: ''
+required: false
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings:
+  display_summary: true
+  required_summary: false
+field_type: text_with_summary

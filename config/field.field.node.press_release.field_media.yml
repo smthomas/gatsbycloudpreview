@@ -1,0 +1,30 @@
+uuid: c62881b7-eb98-481e-9640-d6b5caf52d6e
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.node.field_media
+    - media.type.audio
+    - media.type.image
+    - node.type.press_release
+id: node.press_release.field_media
+field_name: field_media
+entity_type: node
+bundle: press_release
+label: Media
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:media'
+  handler_settings:
+    target_bundles:
+      audio: audio
+      image: image
+    sort:
+      field: _none
+    auto_create: false
+    auto_create_bundle: audio
+field_type: entity_reference

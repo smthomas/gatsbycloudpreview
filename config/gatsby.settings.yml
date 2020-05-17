@@ -1,14 +1,16 @@
-server_url: 'http://96a77bd8.ngrok.io'
+server_url: ''
 secret_key: ''
 preview_entity_types:
+  file: file
   node: node
   block_content: 0
   comment: 0
   contact_message: 0
-  file: 0
   path_alias: 0
   shortcut: 0
   taxonomy_term: 0
   user: 0
   menu_link_content: 0
-incrementalbuild_url: 'http://96a77bd8.ngrok.io'
+incrementalbuild_url: 'https://webhook.gatsbyjs.com/hooks/data_source/publish/f3092eda-cf9f-4fde-b3f5-931de41f87fb'
+build_published: 1
+legacy_preview_url: 0
