@@ -85,18 +85,7 @@ function gatsby_form_alter(&$form, FormStateInterface $form_state, $form_id) {
     // Override node edit form.
     if (!empty($preview_settings[$node_type]) && !empty($server_url)) {
       $front_page = \Drupal::configFactory()->get('system.site')->get('page.front');
-      $gatsby_show_home = FALSE;
-
       $node = \Drupal::routeMatch()->getParameter('node');
-
-      // We want to detect if this node is set to be the frontpage. This affects
-      // what page we want to load in Gatsby.
-      if (!empty($node) && $front_page == '/node/' . $node->id()) {
-        $gatsby_show_home = TRUE;
-      }
-      else {
-        $gatsby_show_home = !preg_match('/\_edit\_form/', $form_id);
-      }
 
       // Add Gatsby Preview button.
       $form['actions']['gatsby_preview'] = [
@@ -110,7 +99,7 @@ function gatsby_form_alter(&$form, FormStateInterface $form_state, $form_id) {
       $form['actions']['gatsby_preview']['#attached'] = [
         'drupalSettings' => [
           'gatsby_preview_url' => $server_url,
-          'gatsby_show_home' => $gatsby_show_home,
+          'gatsby_path' => _gatsby_get_path($node),
           'gatsby_preview_target' => !empty($target_settings[$node_type]) ? $target_settings[$node_type] : 'window',
         ],
         'library' => [
@@ -162,8 +151,6 @@ function gatsby_entity_update(EntityInterface $entity) {
  */
 function gatsby_entity_insert(EntityInterface $entity) {
   $gatsbyPreview = \Drupal::service('gatsby.gatsby_preview');
-
-  $gatsbyPreview = \Drupal::service('gatsby.gatsby_preview');
   if (!$entity instanceof ContentEntityInterface || !$gatsbyPreview->isPreviewEntity($entity)) {
     return;
   }
@@ -199,15 +186,7 @@ function gatsby_node_view(array &$build, $entity, $display, $view_mode) {
 
     // We are wanting to render preview for this content type.
     if (!empty($iframe_settings[$node->bundle()]) && $iframe_settings[$node->bundle()]) {
-      $alias = \Drupal::service('path.alias_manager')->getAliasByPath('/node/' . $node->id());
-
-      // If this is the front-page we don't want to pass the alias
-      // (as Gatsby will likely 404).
-      if (\Drupal::service('path.matcher')->isFrontPage()) {
-        $alias = '';
-      }
-
-      $gatsby_url = preg_replace('/\/$/', '', $server_url) . $alias;
+      $gatsby_url = preg_replace('/\/$/', '', $server_url) . _gatsby_get_path($node);
 
       $build = [];
       $build['#node'] = $node;
@@ -235,4 +214,48 @@ function gatsby_node_view(array &$build, $entity, $display, $view_mode) {
 function _gatsby_update() {
   $gatsbyPreview = \Drupal::service('gatsby.gatsby_preview');
   $gatsbyPreview->gatsbyUpdate();
+}
+
+/**
+ * Gets the correct path for an entity.
+ */
+function _gatsby_get_path(EntityInterface $node) {
+  $alias = \Drupal::service('path.alias_manager')->getAliasByPath('/node/' . $node->id());
+
+  // If this is the front-page we don't want to pass the alias
+  // (as Gatsby will likely 404).
+  if (\Drupal::service('path.matcher')->isFrontPage()) {
+    $alias = '';
+  }
+
+  // Check if there are any path mappings to be considered for this alias.
+  $path_mapping = _gatsby_get_path_mapping();
+
+  if (!empty($path_mapping[$alias])) {
+    $alias = $path_mapping[$alias];
+  }
+
+  return $alias;
+}
+
+/**
+ * Gets an array of Gatsby Preview path mappings.
+ */
+function _gatsby_get_path_mapping() {
+  $path_mapping = \Drupal::config('gatsby.settings')->get('path_mapping');
+
+  $map = [];
+  if (empty($path_mapping)) {
+    return $map;
+  }
+
+  $paths = explode(PHP_EOL, $path_mapping);
+
+  foreach($paths as $path) {
+    if ($split = stripos($path, '|')) {
+      $map[substr($path, 0, $split)] = substr($path, $split + 1);
+    }
+  }
+
+  return $map;
 }

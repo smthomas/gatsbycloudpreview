@@ -90,7 +90,7 @@ class GatsbyInstantPreview extends GatsbyPreview {
       ];
     }
 
-    $incrementalbuild_url = $this->innerService->config->get('incrementalbuild_url');
+    $incrementalbuild_url = $this->config->get('incrementalbuild_url');
     if (!$incrementalbuild_url) {
       return;
     }
@@ -167,14 +167,25 @@ class GatsbyInstantPreview extends GatsbyPreview {
    * Bundles entity JSON data so it can be passed in a single request.
    */
   public function bundleData($key, $json) {
-    if (!empty(self::$updateData[$key]['json'])) {
-      if (!empty(self::$updateData[$key]['json']['data']['type'])) {
+    $updated = &self::$updateData;
+    // The first time this method is called our updated data array is
+    // empty so we can just return the data we were given.
+    if (empty($updated)) {
+      return $json;
+    }
+
+    // This shouldn't be empty but just in case.
+    // @TODO: Determine if we can remove this check.
+    if (!empty($updated[$key]['json'])) {
+      if (!empty($updated[$key]['json']['data']['type'])) {
         // If there is only one entity, convert it to an array.
-        $json['data'] = [self::$updateData[$key]['json']['data'], $json['data']];
+        $json['data'] = [$updated[$key]['json']['data'], $json['data']];
       }
       else {
-        // It's already been converted, just merge the arrays together.
-        $json['data'] = array_merge(self::$updateData[$key]['json']['data'], $json['data']);
+        // Add new entities to the updated json data array.
+        $updated[$key]['json']['data'][] = $json['data'];
+        // Update our json data array with the updated entities.
+        $json['data'] = $updated[$key]['json']['data'];
       }
     }
 

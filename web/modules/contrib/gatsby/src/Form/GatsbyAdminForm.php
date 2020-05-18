@@ -73,22 +73,36 @@ class GatsbyAdminForm extends ConfigFormBase {
     $form['server_url'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Gastby Preview Server URL'),
-      '#description' => $this->t('The URL to the Gatsby preview server (with port number if needed). Multiple preview server URLS can be separated by commas.'),
+      '#description' => $this->t('The URL to the Gatsby preview server (with port number if needed).'),
       '#default_value' => $config->get('server_url'),
+      '#maxlength' => 250,
       '#weight' => 0,
     ];
+    $form['path_mapping'] = [
+      '#type' => 'textarea',
+      '#title' => $this->t('Preview Server Path Mapping'),
+      '#description' => $this->t('If you do any path manipulation in your Gatsby
+        site you may need to map the preview iframe and preview button to this
+        correct path. For instance, you may have a /home path in Drupal that
+        maps to / on your Gatsby site. Enter the Drupal path on the left
+        (starting with a "/") and the Gatsby path on the right (starting with
+        a "/") separated by a "|" character. For example: "/home|/". Enter one
+        path mapping per line.'),
+      '#default_value' => $config->get('path_mapping'),
+    ];
 
-    $build_title = $this->t("Build Server Callback Hook");
+    $build_title = $this->t("Build Server Callback Hook(s)");
     $build_description = $this->t('The Callback URL to trigger the Gatsby Build. Multiple build server URLS can be separated by commas. Note: Incremental builds are currently only supported with JSON:API and gatsby-source-drupal.');
     if ($this->moduleHandler->moduleExists('jsonapi_extras')) {
-      $build_title = $this->t("Incremental Build Server Callback Hook");
-      $build_description = $this->t('The Callback URL to the Gatsby incremental builds server');
+      $build_title = $this->t("Incremental Build Server Callback Hook(s)");
+      $build_description = $this->t('The Callback URL to the Gatsby incremental builds server. Multiple build server URLS can be separated by commas.');
     }
     $form['incrementalbuild_url'] = [
       '#type' => 'textfield',
       '#title' => $build_title,
       '#description' => $build_description,
       '#default_value' => $config->get('incrementalbuild_url'),
+      '#maxlength' => 250,
       '#weight' => 1,
     ];
     $form['build_published'] = [
@@ -111,6 +125,7 @@ class GatsbyAdminForm extends ConfigFormBase {
       '#description' => $this->t('What entities should be sent to the Gatsby Preview Server?'),
       '#weight' => 10,
     ];
+
     return parent::buildForm($form, $form_state);
   }
 
@@ -125,6 +140,7 @@ class GatsbyAdminForm extends ConfigFormBase {
       ->set('incrementalbuild_url', $form_state->getValue('incrementalbuild_url'))
       ->set('build_published', $form_state->getValue('build_published'))
       ->set('preview_entity_types', $form_state->getValue('preview_entity_types'))
+      ->set('path_mapping', $form_state->getValue('path_mapping'))
       ->save();
   }
 

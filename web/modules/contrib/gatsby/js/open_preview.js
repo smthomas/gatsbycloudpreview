@@ -12,12 +12,7 @@
       if (context == document) {
         // Remove trailing slash.
         var gatsby_url = settings.gatsby_preview_url.replace(/\/$/, '');
-        var alias = '';
-
-        // Show home if node add page.
-        if (!settings.gatsby_show_home) {
-          alias = $("#edit-path-0-alias").val();
-        }
+        var alias = settings.gatsby_path;
 
         $("#edit-gatsby-preview").on("click", function(e) {
           e.preventDefault();
