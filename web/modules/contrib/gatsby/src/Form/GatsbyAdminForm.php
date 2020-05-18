@@ -73,13 +73,13 @@ class GatsbyAdminForm extends ConfigFormBase {
     $form['server_url'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Gastby Preview Server URL'),
-      '#description' => $this->t('The URL to the Gatsby preview server (with port number if needed)'),
+      '#description' => $this->t('The URL to the Gatsby preview server (with port number if needed). Multiple preview server URLS can be separated by commas.'),
       '#default_value' => $config->get('server_url'),
       '#weight' => 0,
     ];
 
     $build_title = $this->t("Build Server Callback Hook");
-    $build_description = $this->t('The Callback URL to trigger the Gatsby Build. Note: Incremental builds are currently only supported with JSON:API and gatsby-source-drupal');
+    $build_description = $this->t('The Callback URL to trigger the Gatsby Build. Multiple build server URLS can be separated by commas. Note: Incremental builds are currently only supported with JSON:API and gatsby-source-drupal.');
     if ($this->moduleHandler->moduleExists('jsonapi_extras')) {
       $build_title = $this->t("Incremental Build Server Callback Hook");
       $build_description = $this->t('The Callback URL to the Gatsby incremental builds server');

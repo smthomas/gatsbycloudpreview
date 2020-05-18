@@ -168,6 +168,17 @@ class GatsbyPreview {
    *   The path used to trigger the refresh endpoint.
    */
   protected function triggerRefresh($server_url, $json = FALSE, $path = "/__refresh") {
+    // If the URL has a comma it means multiple end points need to be called.
+    if (stripos($server_url, ',')) {
+      $urls = explode(',', $server_url);
+
+      foreach ($urls as $url) {
+        $this->triggerRefresh($url, $json, $path);
+      }
+
+      return;
+    }
+
     $data = ['timeout' => 1];
 
     if ($json) {
@@ -177,7 +188,8 @@ class GatsbyPreview {
     try {
       $this->httpClient->post($server_url . $path, $data);
     }
-    catch (ServerException | ConnectException $e) {
+    catch (ConnectException $e) {
+      // This is maintained for the legacy callback URL only.
       // Do nothing as no response is returned from the preview server.
     }
     catch (\Exception $e) {

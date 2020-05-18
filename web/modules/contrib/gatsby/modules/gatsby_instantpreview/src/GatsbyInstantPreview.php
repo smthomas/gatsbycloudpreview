@@ -11,6 +11,7 @@ use Drupal\Core\Entity\EntityRepository;
 use Drupal\Core\Logger\LoggerChannelFactoryInterface;
 use Drupal\gatsby\GatsbyPreview;
 use Drupal\jsonapi_extras\EntityToJsonApi;
+use Symfony\Component\HttpFoundation\RequestStack;
 
 /**
  * Class GatsbyInstantPreview.
@@ -32,6 +33,13 @@ class GatsbyInstantPreview extends GatsbyPreview {
   private $entityRepository;
 
   /**
+   * The request stack.
+   *
+   * @var \Symfony\Component\HttpFoundation\RequestStack
+   */
+  protected $requestStack;
+
+  /**
    * Constructs a new GatsbyInstantPreview object.
    */
   public function __construct(GatsbyPreview $inner_service,
@@ -40,10 +48,12 @@ class GatsbyInstantPreview extends GatsbyPreview {
       EntityTypeManagerInterface $entity_type_manager,
       LoggerChannelFactoryInterface $logger,
       EntityToJsonApi $entity_to_json_api,
-      EntityRepository $entity_repository) {
+      EntityRepository $entity_repository,
+      RequestStack $request_stack) {
     $this->innerService = $inner_service;
     $this->entityToJsonApi = $entity_to_json_api;
     $this->entityRepository = $entity_repository;
+    $this->requestStack = $request_stack;
     parent::__construct($http_client, $config, $entity_type_manager, $logger);
   }
 
@@ -55,7 +65,7 @@ class GatsbyInstantPreview extends GatsbyPreview {
    * Drupal entities are update/created/deleted in a single request.
    */
   public function gatsbyPrepareData(ContentEntityInterface $entity = NULL, string $action = 'update') {
-    $json = json_decode($this->entityToJsonApi->serialize($entity), TRUE);
+    $json = $this->getJson($entity);
     $json['id'] = $entity->uuid();
     $json['action'] = $action;
 
@@ -80,7 +90,7 @@ class GatsbyInstantPreview extends GatsbyPreview {
       ];
     }
 
-    $incrementalbuild_url = $this->config->get('incrementalbuild_url');
+    $incrementalbuild_url = $this->innerService->config->get('incrementalbuild_url');
     if (!$incrementalbuild_url) {
       return;
     }
@@ -158,7 +168,7 @@ class GatsbyInstantPreview extends GatsbyPreview {
    */
   public function bundleData($key, $json) {
     if (!empty(self::$updateData[$key]['json'])) {
-      if (self::$updateData['incrementalbuild']['json']['data']['type']) {
+      if (!empty(self::$updateData[$key]['json']['data']['type'])) {
         // If there is only one entity, convert it to an array.
         $json['data'] = [self::$updateData[$key]['json']['data'], $json['data']];
       }
@@ -181,7 +191,7 @@ class GatsbyInstantPreview extends GatsbyPreview {
       $selectedEntityTypes = $this->config->get('preview_entity_types') ?: [];
       if (!empty($entityType) && in_array($entityType[0], array_values($selectedEntityTypes), TRUE)) {
         $related_entity = $this->entityRepository->loadEntityByUuid($entityType[0], $data['data']['id']);
-        $related_json = json_decode($this->entityToJsonApi->serialize($related_entity), TRUE);
+        $related_json = $this->getJson($related_entity);
 
         // We need to traverse all related entities to get all relevant JSON.
         if (!empty($related_json['data']['relationships'])) {
@@ -191,6 +201,28 @@ class GatsbyInstantPreview extends GatsbyPreview {
         $entity_data[] = $related_json['data'];
       }
     }
+  }
+
+  /**
+   * Gets the JSON object for an entity.
+   *
+   * This is needed because of issue
+   * https://www.drupal.org/project/jsonapi_extras/issues/3135950
+   * which causes EntityToJsonApi not to work with the AjaxForm included with
+   * Media Library. This is a workaround until the issue above is fixed.
+   */
+  private function getJson(ContentEntityInterface $entity) {
+    // Get the current request and verify this is not an ajax request.
+    $request = $this->requestStack->getCurrentRequest();
+
+    if ($request->query->has('ajax_form')) {
+      $json = $this->entityToJsonApi->normalize($entity);
+      $this->requestStack->pop();
+      return $json;
+    }
+
+    return $this->entityToJsonApi->normalize($entity);
+
   }
 
 }
