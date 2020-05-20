@@ -72,7 +72,7 @@ class GatsbyAdminForm extends ConfigFormBase {
     $config = $this->config('gatsby.settings');
     $form['server_url'] = [
       '#type' => 'textfield',
-      '#title' => $this->t('Gastby Preview Server URL'),
+      '#title' => $this->t('Gatsby Preview Server URL'),
       '#description' => $this->t('The URL to the Gatsby preview server (with port number if needed).'),
       '#default_value' => $config->get('server_url'),
       '#maxlength' => 250,
@@ -121,8 +121,8 @@ class GatsbyAdminForm extends ConfigFormBase {
       '#type' => 'checkboxes',
       '#options' => $this->getContentEntityTypes(),
       '#default_value' => $config->get('preview_entity_types') ?: [],
-      '#title' => $this->t('Entity types to send to Gatsby Preview Server'),
-      '#description' => $this->t('What entities should be sent to the Gatsby Preview Server?'),
+      '#title' => $this->t('Entity types to send to Gatsby Preview and Build Server'),
+      '#description' => $this->t('What entities should be sent to the Gatsby Preview and Build Server?'),
       '#weight' => 10,
     ];
 

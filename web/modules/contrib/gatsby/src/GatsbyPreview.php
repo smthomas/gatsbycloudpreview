@@ -111,7 +111,7 @@ class GatsbyPreview {
     ];
 
     $preview_path = "/__refresh";
-    $preview_url = $this->innerService->config->get('server_url');
+    $preview_url = $this->config->get('server_url');
     if ($preview_url) {
       self::$updateData['preview'] = [
         'url' => $preview_url,
@@ -120,7 +120,7 @@ class GatsbyPreview {
       ];
     }
 
-    $incrementalbuild_url = $this->innerService->config->get('incrementalbuild_url');
+    $incrementalbuild_url = $this->config->get('incrementalbuild_url');
     if ($incrementalbuild_url) {
       self::$updateData['incrementalbuild'] = [
         'url' => $incrementalbuild_url,
@@ -143,6 +143,23 @@ class GatsbyPreview {
     $entityType = $entity->getEntityTypeId();
     $selectedEntityTypes = $this->config->get('preview_entity_types') ?: [];
     return in_array($entityType, array_values($selectedEntityTypes), TRUE);
+  }
+
+  /**
+   * Returns true if a preview server or build server URL is configured.
+   *
+   * @return bool
+   *   If a build or preview URL is configured.
+   */
+  public function isConfigured() {
+    $preview_url = $this->config->get('server_url');
+    $incrementalbuild_url = $this->config->get('incrementalbuild_url');
+
+    if ($preview_url || $incrementalbuild_url) {
+      return TRUE;
+    }
+
+    return FALSE;
   }
 
   /**

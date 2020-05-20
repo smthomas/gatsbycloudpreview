@@ -19,7 +19,7 @@ class GatsbyInstantPreviewAdminForm extends GatsbyAdminForm {
 
     $form['secret_key'] = [
       '#type' => 'textfield',
-      '#title' => $this->t('Gastby Secret Key'),
+      '#title' => $this->t('Gatsby Secret Key'),
       '#description' => $this->t('A Secret Key value that will be sent to Gatsby Preview and Build servers for an
         additional layer of security. <a href="#" id="gatsby--generate">Generate a Secret Key</a>'),
       '#default_value' => $config->get('secret_key'),

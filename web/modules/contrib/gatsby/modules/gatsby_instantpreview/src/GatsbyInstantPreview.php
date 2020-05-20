@@ -109,6 +109,9 @@ class GatsbyInstantPreview extends GatsbyPreview {
       $this->buildRelationshipJson($json['data']['relationships'], $entity_data);
 
       if (!empty($entity_data)) {
+        // Remove the uuid keys from the array.
+        $entity_data = array_values($entity_data);
+
         $original_data = $json['data'];
         $entity_data[] = $original_data;
         $json['data'] = $entity_data;
@@ -182,6 +185,16 @@ class GatsbyInstantPreview extends GatsbyPreview {
         $json['data'] = [$updated[$key]['json']['data'], $json['data']];
       }
       else {
+        // Check to make sure this entity wasn't already added.
+        foreach ($updated[$key]['json']['data'] as $index => $entity) {
+          if ($entity['id'] == $json['id']) {
+            // Update the entity data if this entity was already.
+            $updated[$key]['json']['data'][$index] = $json['data'];
+            $json['data'] = $updated[$key]['json']['data'];
+            return $json;
+          }
+        }
+
         // Add new entities to the updated json data array.
         $updated[$key]['json']['data'][] = $json['data'];
         // Update our json data array with the updated entities.
@@ -201,6 +214,11 @@ class GatsbyInstantPreview extends GatsbyPreview {
       $entityType = !empty($data['data']['type']) ? explode('--', $data['data']['type']) : "";
       $selectedEntityTypes = $this->config->get('preview_entity_types') ?: [];
       if (!empty($entityType) && in_array($entityType[0], array_values($selectedEntityTypes), TRUE)) {
+        // Skip this entity if it's already been added to the data array.
+        if (!empty($entity_data[$data['data']['id']])) {
+          continue;
+        }
+
         $related_entity = $this->entityRepository->loadEntityByUuid($entityType[0], $data['data']['id']);
         $related_json = $this->getJson($related_entity);
 
@@ -209,7 +227,7 @@ class GatsbyInstantPreview extends GatsbyPreview {
           $this->buildRelationshipJson($related_json['data']['relationships'], $entity_data);
         }
 
-        $entity_data[] = $related_json['data'];
+        $entity_data[$data['data']['id']] = $related_json['data'];
       }
     }
   }

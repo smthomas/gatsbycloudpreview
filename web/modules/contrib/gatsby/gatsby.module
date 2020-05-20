@@ -142,6 +142,10 @@ function gatsby_entity_update(EntityInterface $entity) {
     return;
   }
 
+  if (!$gatsbyPreview->isConfigured()) {
+    return;
+  }
+
   $gatsbyPreview->gatsbyPrepareData($entity);
   drupal_register_shutdown_function('_gatsby_update');
 }
@@ -155,6 +159,10 @@ function gatsby_entity_insert(EntityInterface $entity) {
     return;
   }
 
+  if (!$gatsbyPreview->isConfigured()) {
+    return;
+  }
+
   $gatsbyPreview->gatsbyPrepareData($entity, 'create');
   drupal_register_shutdown_function('_gatsby_update');
 }
@@ -164,8 +172,11 @@ function gatsby_entity_insert(EntityInterface $entity) {
  */
 function gatsby_entity_delete(EntityInterface $entity) {
   $gatsbyPreview = \Drupal::service('gatsby.gatsby_preview');
-
   if (!$entity instanceof ContentEntityInterface || !$gatsbyPreview->isPreviewEntity($entity)) {
+    return;
+  }
+
+  if (!$gatsbyPreview->isConfigured()) {
     return;
   }
 
