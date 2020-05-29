@@ -1,4 +1,4 @@
-name: 'Gatsby Instant Preview and Incremental Builds'
+name: 'Gatsby JSON:API Instant Preview and Incremental Builds'
 type: module
 description: 'Enables a faster preview exerience and incremental builds support when using JSON:API and gatsby-source-drupal'
 core: 8.x
