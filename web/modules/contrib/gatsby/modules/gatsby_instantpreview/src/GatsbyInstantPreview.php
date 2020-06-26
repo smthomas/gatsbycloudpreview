@@ -62,7 +62,7 @@ class GatsbyInstantPreview extends GatsbyPreview {
    *
    * By preparing the data in a separate step we prevent multiple requests from
    * being sent to the preview or incremental builds servers if mulutiple
-   * Drupal entities are update/created/deleted in a single request.
+   * Drupal entities are update/inserted/deleted in a single request.
    */
   public function gatsbyPrepareData(ContentEntityInterface $entity = NULL, string $action = 'update') {
     $json = $this->getJson($entity);
@@ -240,7 +240,7 @@ class GatsbyInstantPreview extends GatsbyPreview {
    * which causes EntityToJsonApi not to work with the AjaxForm included with
    * Media Library. This is a workaround until the issue above is fixed.
    */
-  private function getJson(ContentEntityInterface $entity) {
+  public function getJson(ContentEntityInterface $entity) {
     // Get the current request and verify this is not an ajax request.
     $request = $this->requestStack->getCurrentRequest();
 

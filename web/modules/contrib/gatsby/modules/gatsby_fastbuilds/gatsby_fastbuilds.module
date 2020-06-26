@@ -1,0 +1,78 @@
+<?php
+
+/**
+ * @file
+ * Contains gatsby_fastbuilds.module.
+ */
+
+use Drupal\Core\Entity\ContentEntityInterface;
+use Drupal\Core\Entity\EntityInterface;
+
+/**
+ * Implements hook_entity_update().
+ */
+function gatsby_fastbuilds_entity_update(EntityInterface $entity) {
+  $gatsbyPreview = \Drupal::service('gatsby.gatsby_preview');
+  if (!$entity instanceof ContentEntityInterface || !$gatsbyPreview->isPreviewEntity($entity)) {
+    return;
+  }
+
+  \Drupal::service('gatsby.gatsby_logger')->logEntity($entity, 'update');
+}
+
+/**
+ * Implements hook_entity_insert().
+ */
+function gatsby_fastbuilds_entity_insert(EntityInterface $entity) {
+  $gatsbyPreview = \Drupal::service('gatsby.gatsby_preview');
+  if (!$entity instanceof ContentEntityInterface || !$gatsbyPreview->isPreviewEntity($entity)) {
+    return;
+  }
+
+  \Drupal::service('gatsby.gatsby_logger')->logEntity($entity, 'insert');
+}
+
+/**
+ * Implements hook_entity_delete().
+ */
+function gatsby_fastbuilds_entity_delete(EntityInterface $entity) {
+  $gatsbyPreview = \Drupal::service('gatsby.gatsby_preview');
+  if (!$entity instanceof ContentEntityInterface || !$gatsbyPreview->isPreviewEntity($entity)) {
+    return;
+  }
+
+  \Drupal::service('gatsby.gatsby_logger')->logEntity($entity, 'delete');
+}
+
+/**
+ * Implements hook_cron().
+ */
+function gatsby_fastbuilds_cron() {
+
+  // Do not delete entities if delete setting is not enabled.
+  if (!\Drupal::config('gatsby_fastbuilds.settings')->get('delete_log_entities')) {
+    return;
+  }
+
+  // Make sure a valid expiration setting is set.
+  $expiration = \Drupal::config('gatsby_fastbuilds.settings')->get('log_expiration');
+  if (!$expiration) {
+    return;
+  }
+  $expiration = 60;
+
+  \Drupal::service('gatsby.gatsby_logger')
+    ->deleteExpiredLoggedEntities(time() - $expiration);
+
+  $last_logtime = \Drupal::service('gatsby.gatsby_logger')
+    ->getOldestLoggedEntityTimestamp();
+
+  // Stop processing if there are no current log entries.
+  if (!$last_logtime) {
+    return;
+  }
+
+  // Store the log time of the last log entry in order to validate future syncs.
+  \Drupal::state()
+    ->set('gatsby_fastbuilds.last_logtime', $last_logtime);
+}

@@ -163,7 +163,7 @@ function gatsby_entity_insert(EntityInterface $entity) {
     return;
   }
 
-  $gatsbyPreview->gatsbyPrepareData($entity, 'create');
+  $gatsbyPreview->gatsbyPrepareData($entity, 'insert');
   drupal_register_shutdown_function('_gatsby_update');
 }
 
